@@ -28,28 +28,39 @@ InfraLink enables decentralized access to hardware devices through smart contrac
 ### Smart Contracts
 - **Solidity** - Device access control and payment logic
 - **ERC20** - Token-based payments
-- **Ethereum** - Blockchain infrastructure
+- **Multi-Chain** - Ethereum, Hedera, and EVM-compatible networks
 
 ### Web Application
 - **React** + **Vite** - Modern web framework
 - **TypeScript** - Type-safe development
 - **Tailwind CSS** - Utility-first styling
 - **shadcn/ui** - Component library
-- **RainbowKit** - Wallet connection
-- **Wagmi** - Ethereum React hooks
-- **Ethers.js** - Ethereum interaction
+- **RainbowKit** - Multi-chain wallet connection
+- **Wagmi** - Blockchain React hooks
+- **Ethers.js** - Blockchain interaction
 
 ### Device Monitor
 - **Python** - Hardware monitoring script
-- **Web3.py** - Ethereum integration
+- **Web3.py** - Multi-chain blockchain integration
 - **Tkinter** - GUI interface
+
+### Supported Networks
+- **Hedera Testnet** (Chain ID: 296, HBAR)
+- **Ethereum** (Mainnet, Sepolia testnet)
+- **Polygon**, **Optimism**, **Arbitrum**, **Base**
+- **Local Development** (Ganache, Hardhat)
 
 ## 🚀 Quick Start
 
 1. **Deploy Contracts**
    ```bash
-   # Deploy testtoken.sol (optional)
-   # Deploy devicecontract.sol with token address and fees
+   # Deploy to your preferred network:
+   # - Hedera Testnet (recommended for testing)
+   # - Ethereum testnets (Sepolia/Goerli)
+   # - Mainnet for production
+   
+   # Deploy infralink-info.sol (central registry)
+   # Deploy devicecontract.sol with device info and fees
    ```
 
 2. **Run Web App**

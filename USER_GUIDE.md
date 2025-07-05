@@ -18,13 +18,28 @@ A central registry that manages user profiles and device whitelist information.
 - Centralized management of device access permissions
 
 ### 💳 Native Token Support
-Devices can now accept both ERC20 tokens and native ETH payments.
+Devices can now accept both ERC20 tokens and native tokens (ETH/HBAR).
 
 **Features:**
-- Device contracts can be configured to use native ETH instead of ERC20 tokens
+- Device contracts can be configured to use native tokens instead of ERC20 tokens
+- **Ethereum**: Uses ETH as native token
+- **Hedera**: Uses HBAR as native token  
 - No token approval required for native token payments
 - Automatic handling of payment types in both web and Python interfaces
 - Clear indication of payment type in all UIs
+
+### 🌐 Multi-Chain Support
+InfraLink now supports multiple blockchain networks.
+
+**Supported Networks:**
+- **Hedera Testnet** (Chain ID: 296, Currency: HBAR)
+- **Ethereum Mainnet/Testnets** (Sepolia)
+- **Polygon**, **Optimism**, **Arbitrum**, **Base**
+
+**Benefits:**
+- **Hedera**: Fast transactions, low fees, enterprise-grade security
+- **Ethereum**: Broad ecosystem and wallet support
+- Choose the network that best fits your use case
 
 ### 🌐 Enhanced Error Handling
 Better error messages and chain detection for improved user experience.
@@ -67,17 +82,25 @@ Better error messages and chain detection for improved user experience.
    - Configure for both ERC20 and native token devices
    - Print and place QR codes on your devices
 
-### Native Token Configuration
+### Multi-Chain Configuration
 
 1. **For Device Owners:**
-   - Deploy your device contract with `useNativeToken = true`
-   - Set fees in wei (1 ETH = 1e18 wei)
-   - No token address needed for native token devices
+   - Choose your preferred blockchain network
+   - **Hedera**: Fast, low-cost transactions with HBAR
+   - **Ethereum**: Broad ecosystem support with ETH
+   - Deploy your device contract with `useNativeToken = true` for native tokens
+   - Set fees in appropriate units:
+     - Ethereum: wei (1 ETH = 1e18 wei)
+     - Hedera: tinybars (1 HBAR = 1e8 tinybars)
 
 2. **For Users:**
-   - Native token devices show "Native Token (ETH)" in payment info
-   - No token approval required - payments are direct ETH transfers
-   - Ensure sufficient ETH balance for device usage
+   - Add the network to your wallet if not already configured
+   - **Hedera Testnet**: Network settings provided above
+   - Native token devices show currency-specific info:
+     - "Native Token (ETH)" on Ethereum
+     - "Native Token (HBAR)" on Hedera
+   - No token approval required - payments are direct native transfers
+   - Ensure sufficient balance (ETH/HBAR) for device usage
 
 ## Contract Addresses
 
@@ -115,8 +138,11 @@ Better error messages and chain detection for improved user experience.
 ### For Users
 - Keep your profile information current
 - Check your whitelist status before attempting device access
-- Ensure sufficient balance (ETH or tokens) before using devices
+- Ensure sufficient balance before using devices:
+  - **Ethereum**: ETH for native token devices, ERC20 tokens for token devices
+  - **Hedera**: HBAR for native token devices, HTS tokens for token devices
 - Verify you're connected to the correct network
+- Add Hedera testnet to your wallet if using Hedera-based devices
 
 ### For Developers
 - Always validate contract addresses before connection
@@ -134,9 +160,18 @@ Better error messages and chain detection for improved user experience.
 - Ensure the contract is deployed and verified
 
 **Payment failures:**
-- For ERC20: Check token approval and balance
-- For native tokens: Check ETH balance
-- Verify you're using the correct payment method
+- For ERC20 tokens: Check token approval and balance
+- For native tokens: Check ETH/HBAR balance
+- Verify you're using the correct payment method for the network
+- **Network-specific issues**:
+  - **Ethereum**: May have high gas fees during network congestion
+  - **Hedera**: Check HBAR balance and ensure account is properly funded
+
+**Network connection issues:**
+- Verify you're connected to the correct blockchain network
+- **Hedera users**: Ensure Hedera testnet is added to your wallet
+- Check RPC endpoints are responding
+- Try switching between networks and back
 
 **Profile/whitelist not loading:**
 - Ensure InfraLink Info contract is properly deployed

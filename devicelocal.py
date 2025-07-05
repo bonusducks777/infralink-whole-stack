@@ -3,13 +3,35 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from web3 import Web3
 import json
+from network_utils import get_network_info, format_native_amount, get_currency_symbol
 
 # === CONFIG ===
-INFURA_URL = "https://mainnet.infura.io/v3/YOUR_PROJECT_ID"  # Replace with your node
-DEVICE_CONTRACT_ADDRESS = "0xYourDeviceContractAddress"  # Will be updated when contract is deployed
+# Supported Networks:
+# - Ethereum Mainnet: "https://mainnet.infura.io/v3/YOUR_PROJECT_ID"
+# - Ethereum Sepolia: "https://sepolia.infura.io/v3/YOUR_PROJECT_ID"  
+# - Hedera Testnet: "https://testnet.hashio.io/api"
+# - Local development: "http://127.0.0.1:8545"
+INFURA_URL = "https://testnet.hashio.io/api"  # Hedera testnet by default
+DEVICE_CONTRACT_ADDRESS = "0x462e7F95b200F6f7B59cd62b7940D7Ac97E67f2F"  # Will be updated when contract is deployed
 
-# Enhanced Contract ABI with whitelist support
+# Enhanced Contract ABI with whitelist support - Updated to match deployed contract
 CONTRACT_ABI = [
+    {
+        "inputs": [
+            {"internalType": "uint256", "name": "secondsToActivate", "type": "uint256"}
+        ],
+        "name": "activate",
+        "outputs": [],
+        "stateMutability": "payable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "deactivate",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
     {
         "inputs": [
             {"internalType": "address", "name": "_token", "type": "address"},
@@ -43,19 +65,143 @@ CONTRACT_ABI = [
         "type": "event"
     },
     {
+        "anonymous": False,
         "inputs": [
-            {"internalType": "uint256", "name": "secondsToActivate", "type": "uint256"}
+            {"indexed": False, "internalType": "string", "name": "name", "type": "string"},
+            {"indexed": False, "internalType": "string", "name": "description", "type": "string"}
         ],
-        "name": "activate",
+        "name": "DeviceInfoUpdated",
+        "type": "event"
+    },
+    {
+        "anonymous": False,
+        "inputs": [
+            {"indexed": False, "internalType": "uint256", "name": "newFee", "type": "uint256"},
+            {"indexed": False, "internalType": "uint256", "name": "newWhitelistFee", "type": "uint256"}
+        ],
+        "name": "FeeChanged",
+        "type": "event"
+    },
+    {
+        "inputs": [],
+        "name": "forceDeactivate",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {"internalType": "string", "name": "_name", "type": "string"},
+            {"internalType": "string", "name": "_description", "type": "string"}
+        ],
+        "name": "setDeviceInfo",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {"internalType": "uint256", "name": "_fee", "type": "uint256"},
+            {"internalType": "uint256", "name": "_whitelistFee", "type": "uint256"}
+        ],
+        "name": "setFee",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {"internalType": "address", "name": "_token", "type": "address"}
+        ],
+        "name": "setToken",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {"internalType": "address", "name": "user", "type": "address"},
+            {"internalType": "bool", "name": "status", "type": "bool"},
+            {"internalType": "string", "name": "name", "type": "string"}
+        ],
+        "name": "setWhitelist",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {"internalType": "uint256", "name": "_fee", "type": "uint256"}
+        ],
+        "name": "setWhitelistFee",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {"internalType": "address", "name": "newOwner", "type": "address"}
+        ],
+        "name": "transferOwnership",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "anonymous": False,
+        "inputs": [
+            {"indexed": True, "internalType": "address", "name": "user", "type": "address"},
+            {"indexed": False, "internalType": "bool", "name": "status", "type": "bool"},
+            {"indexed": False, "internalType": "string", "name": "name", "type": "string"}
+        ],
+        "name": "WhitelistUpdated",
+        "type": "event"
+    },
+    {
+        "inputs": [],
+        "name": "withdrawFees",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
     },
     {
         "inputs": [],
-        "name": "deactivate",
-        "outputs": [],
-        "stateMutability": "nonpayable",
+        "name": "deviceDescription",
+        "outputs": [
+            {"internalType": "string", "name": "", "type": "string"}
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "deviceName",
+        "outputs": [
+            {"internalType": "string", "name": "", "type": "string"}
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "feePerSecond",
+        "outputs": [
+            {"internalType": "uint256", "name": "", "type": "uint256"}
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "getDeviceDetails",
+        "outputs": [
+            {"internalType": "string", "name": "_deviceName", "type": "string"},
+            {"internalType": "string", "name": "_deviceDescription", "type": "string"},
+            {"internalType": "bool", "name": "_useNativeToken", "type": "bool"},
+            {"internalType": "bool", "name": "_lastUserWasWhitelisted", "type": "bool"},
+            {"internalType": "uint256", "name": "_whitelistFeePerSecond", "type": "uint256"}
+        ],
+        "stateMutability": "view",
         "type": "function"
     },
     {
@@ -73,12 +219,20 @@ CONTRACT_ABI = [
             {"internalType": "uint256", "name": "_timeRemaining", "type": "uint256"},
             {"internalType": "string", "name": "_tokenName", "type": "string"},
             {"internalType": "string", "name": "_tokenSymbol", "type": "string"},
-            {"internalType": "uint8", "name": "_tokenDecimals", "type": "uint8"},
-            {"internalType": "string", "name": "_deviceName", "type": "string"},
-            {"internalType": "string", "name": "_deviceDescription", "type": "string"},
-            {"internalType": "bool", "name": "_lastUserWasWhitelisted", "type": "bool"},
+            {"internalType": "uint8", "name": "_tokenDecimals", "type": "uint8"}
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {"internalType": "address", "name": "user", "type": "address"}
+        ],
+        "name": "getUserWhitelistInfo",
+        "outputs": [
             {"internalType": "string", "name": "_whitelistName", "type": "string"},
-            {"internalType": "bool", "name": "_useNativeToken", "type": "bool"}
+            {"internalType": "bool", "name": "_isWhitelisted", "type": "bool"},
+            {"internalType": "uint256", "name": "_applicableFee", "type": "uint256"}
         ],
         "stateMutability": "view",
         "type": "function"
@@ -110,13 +264,6 @@ CONTRACT_ABI = [
     },
     {
         "inputs": [],
-        "name": "sessionEndsAt",
-        "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
         "name": "lastUserWasWhitelisted",
         "outputs": [{"internalType": "bool", "name": "", "type": "bool"}],
         "stateMutability": "view",
@@ -124,43 +271,113 @@ CONTRACT_ABI = [
     },
     {
         "inputs": [],
-        "name": "deviceName",
-        "outputs": [{"internalType": "string", "name": "", "type": "string"}],
+        "name": "owner",
+        "outputs": [
+            {"internalType": "address", "name": "", "type": "address"}
+        ],
         "stateMutability": "view",
         "type": "function"
     },
     {
         "inputs": [],
-        "name": "deviceDescription",
-        "outputs": [{"internalType": "string", "name": "", "type": "string"}],
+        "name": "sessionEndsAt",
+        "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "token",
+        "outputs": [
+            {"internalType": "address", "name": "", "type": "address"}
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "tokenDecimals",
+        "outputs": [
+            {"internalType": "uint8", "name": "", "type": "uint8"}
+        ],
         "stateMutability": "view",
         "type": "function"
     },
     {
         "inputs": [],
         "name": "tokenName",
-        "outputs": [{"internalType": "string", "name": "", "type": "string"}],
+        "outputs": [
+            {"internalType": "string", "name": "", "type": "string"}
+        ],
         "stateMutability": "view",
         "type": "function"
     },
     {
         "inputs": [],
         "name": "tokenSymbol",
-        "outputs": [{"internalType": "string", "name": "", "type": "string"}],
+        "outputs": [
+            {"internalType": "string", "name": "", "type": "string"}
+        ],
         "stateMutability": "view",
         "type": "function"
     },
     {
         "inputs": [],
-        "name": "feePerSecond",
-        "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+        "name": "useNativeToken",
+        "outputs": [
+            {"internalType": "bool", "name": "", "type": "bool"}
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {"internalType": "address", "name": "", "type": "address"}
+        ],
+        "name": "whitelist",
+        "outputs": [
+            {"internalType": "bool", "name": "", "type": "bool"}
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {"internalType": "uint256", "name": "", "type": "uint256"}
+        ],
+        "name": "whitelistAddresses",
+        "outputs": [
+            {"internalType": "address", "name": "", "type": "address"}
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "whitelistCount",
+        "outputs": [
+            {"internalType": "uint256", "name": "", "type": "uint256"}
+        ],
         "stateMutability": "view",
         "type": "function"
     },
     {
         "inputs": [],
         "name": "whitelistFeePerSecond",
-        "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+        "outputs": [
+            {"internalType": "uint256", "name": "", "type": "uint256"}
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {"internalType": "address", "name": "", "type": "address"}
+        ],
+        "name": "whitelistNames",
+        "outputs": [
+            {"internalType": "string", "name": "", "type": "string"}
+        ],
         "stateMutability": "view",
         "type": "function"
     }
@@ -358,6 +575,10 @@ class DeviceMonitor:
             
             if not self.w3.is_connected():
                 raise Exception("Failed to connect to RPC node")
+            
+            # Convert address to checksummed format if needed
+            if contract_address.startswith('0x') and len(contract_address) == 42:
+                contract_address = self.w3.to_checksum_address(contract_address.lower())
                 
             # Initialize contract
             self.contract = self.w3.eth.contract(address=contract_address, abi=CONTRACT_ABI)
@@ -385,7 +606,7 @@ class DeviceMonitor:
             zero_address = "0x0000000000000000000000000000000000000000"
             device_info = self.contract.functions.getDeviceInfo(zero_address).call()
             
-            # Parse the enhanced device info response
+            # Parse the device info response (10 values from getDeviceInfo)
             fee_per_second = device_info[0]
             is_active = device_info[1]
             last_activated_by = device_info[2]
@@ -396,11 +617,14 @@ class DeviceMonitor:
             token_name = device_info[7]
             token_symbol = device_info[8]
             token_decimals = device_info[9]
-            device_name = device_info[10]
-            device_description = device_info[11]
-            last_user_was_whitelisted = device_info[12]
-            whitelist_name = device_info[13]
-            use_native_token = device_info[14]
+            
+            # Get additional device details separately
+            device_details = self.contract.functions.getDeviceDetails().call()
+            device_name = device_details[0]
+            device_description = device_details[1]
+            use_native_token = device_details[2]
+            last_user_was_whitelisted = device_details[3]
+            whitelist_fee_per_second = device_details[4]
             
             # Store device info for other uses
             self.device_info = {
@@ -417,7 +641,7 @@ class DeviceMonitor:
             
             # Get regular and whitelist fees
             regular_fee = self.contract.functions.feePerSecond().call()
-            whitelist_fee = self.contract.functions.whitelistFeePerSecond().call()
+            whitelist_fee = whitelist_fee_per_second  # Use the value from getDeviceDetails
             
             current_time = int(time.time())
             
@@ -426,7 +650,14 @@ class DeviceMonitor:
             self.device_desc_label.config(text=f"Description: {device_description}")
             
             if use_native_token:
-                self.token_info_label.config(text=f"Payment Token: Native Token (ETH)")
+                # Get network-aware native token name
+                try:
+                    chain_id = self.w3.eth.chain_id
+                    network_info = get_network_info(chain_id)
+                    native_currency = network_info['currency']
+                    self.token_info_label.config(text=f"Payment Token: Native Token ({native_currency})")
+                except:
+                    self.token_info_label.config(text=f"Payment Token: Native Token ({token_symbol})")
             else:
                 self.token_info_label.config(text=f"Payment Token: {token_name} ({token_symbol})")
             
@@ -434,7 +665,12 @@ class DeviceMonitor:
             regular_fee_formatted = self.format_token_amount(regular_fee, token_decimals)
             whitelist_fee_formatted = self.format_token_amount(whitelist_fee, token_decimals)
             
-            token_display = "ETH" if use_native_token else token_symbol
+            # Get network-aware currency symbol
+            try:
+                chain_id = self.w3.eth.chain_id
+                token_display = get_currency_symbol(chain_id, token_symbol if use_native_token else token_symbol)
+            except:
+                token_display = "HBAR" if use_native_token else token_symbol
             
             self.regular_fee_label.config(text=f"Regular Fee: {regular_fee_formatted} {token_display}/sec")
             
@@ -471,9 +707,9 @@ class DeviceMonitor:
                 # Update fee label with current user's rate
                 if last_user_was_whitelisted:
                     current_fee_formatted = whitelist_fee_formatted if whitelist_fee > 0 else "FREE"
-                    self.fee_label.config(text=f"Current user's rate: {current_fee_formatted} {token_symbol}/sec")
+                    self.fee_label.config(text=f"Current user's rate: {current_fee_formatted} {token_display}/sec")
                 else:
-                    self.fee_label.config(text=f"Current user's rate: {regular_fee_formatted} {token_symbol}/sec")
+                    self.fee_label.config(text=f"Current user's rate: {regular_fee_formatted} {token_display}/sec")
                 
             else:
                 self.status_label.config(text="🔒 OFFLINE", foreground="red")
@@ -481,7 +717,7 @@ class DeviceMonitor:
                 self.whitelist_status_label.config(text="")
                 self.time_label.config(text="Time remaining: --")
                 self.progress['value'] = 0
-                self.fee_label.config(text=f"Regular rate: {regular_fee_formatted} {token_symbol}/sec")
+                self.fee_label.config(text=f"Regular rate: {regular_fee_formatted} {token_display}/sec")
                 
             self.status_bar.config(text=f"Last updated: {time.strftime('%H:%M:%S')}")
             self.last_error = None
@@ -497,11 +733,19 @@ class DeviceMonitor:
         self.root.after(self.update_interval, self.update_status)
         
     def format_token_amount(self, amount, decimals):
-        """Format token amount with proper decimal places"""
+        """Format token amount with proper decimal places using network-aware formatting"""
         if amount == 0:
             return "0"
         
-        # Convert to decimal with proper precision
+        # Use network utilities if we have chain info
+        if hasattr(self, 'w3') and self.w3 and self.w3.is_connected():
+            try:
+                chain_id = self.w3.eth.chain_id
+                return format_native_amount(amount, chain_id, decimals)
+            except:
+                pass  # Fall back to manual formatting
+        
+        # Fallback to manual formatting
         decimal_amount = amount / (10 ** decimals)
         
         # Format with appropriate decimal places

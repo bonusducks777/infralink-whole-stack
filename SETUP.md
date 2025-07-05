@@ -5,8 +5,15 @@
 1. **Node.js** (v18 or higher)
 2. **Python** (v3.8 or higher)
 3. **Web3 Wallet** (MetaMask, WalletConnect compatible)
-4. **Ethereum Node Access** (Infura, Alchemy, or local node)
+4. **Blockchain Node Access** (Infura, Alchemy, Hedera testnet, or local node)
 5. **Solidity Compiler** (for contract deployment)
+
+## 🌐 Supported Networks
+
+- **Ethereum Mainnet/Testnets** (Sepolia, Goerli)
+- **Hedera Testnet** (Chain ID: 296, Currency: HBAR)
+- **Local Development** (Ganache, Hardhat)
+- **Other EVM-compatible networks**
 
 ## 🚀 Quick Start
 
@@ -27,14 +34,81 @@
 ```
 
 #### Deploy Device Contract
+
+**IMPORTANT: Fee calculation varies by network! Use the correct values below.**
+
 ```solidity
 // Deploy devicecontract.sol with these parameters:
-// - _token: Address of your ERC20 token (set to zero address for native ETH)
-// - _feePerSecond: Fee in token units per second for regular users (e.g., 1000000000000000 for 0.001 tokens)
-// - _whitelistFeePerSecond: Fee in token units per second for whitelisted users (0 for free access)
+// - _token: Address of your ERC20 token (set to zero address 0x0000000000000000000000000000000000000000 for native token)
+// - _feePerSecond: Fee in smallest units per second (see network-specific values below)
+// - _whitelistFeePerSecond: Fee in smallest units per second for whitelisted users (0 for free access)
 // - _deviceName: Human-readable name for your device (e.g., "3D Printer Lab A")
 // - _deviceDescription: Description of the device (e.g., "High-resolution 3D printer for prototyping")
-// - _useNativeToken: true for ETH payments, false for ERC20 tokens
+```
+
+##### Network-Specific Fee Values for Native Token Usage
+
+**For 0.001 native token per second rate:**
+
+| Network | Chain ID | Currency | Decimals | Fee Value (_feePerSecond) | Example 10min Cost |
+|---------|----------|----------|----------|---------------------------|-------------------|
+| Ethereum Mainnet | 1 | ETH | 18 | 1000000000000000 | 0.6 ETH |
+| Ethereum Sepolia | 11155111 | ETH | 18 | 1000000000000000 | 0.6 ETH |
+| Ethereum Goerli | 5 | ETH | 18 | 1000000000000000 | 0.6 ETH |
+| Hedera Mainnet | 295 | HBAR | 8 | 100000 | 0.6 HBAR |
+| Hedera Testnet | 296 | HBAR | 8 | 100000 | 0.6 HBAR |
+| Polygon | 137 | MATIC | 18 | 1000000000000000 | 0.6 MATIC |
+| BSC | 56 | BNB | 18 | 1000000000000000 | 0.6 BNB |
+| Avalanche | 43114 | AVAX | 18 | 1000000000000000 | 0.6 AVAX |
+
+**Deployment Examples:**
+
+```solidity
+// Ethereum networks (18 decimals):
+// Constructor(_token, _feePerSecond, _whitelistFeePerSecond, _deviceName, _deviceDescription)
+Constructor(
+    0x0000000000000000000000000000000000000000,  // Zero address for ETH
+    1000000000000000,                            // 0.001 ETH per second
+    500000000000000,                             // 0.0005 ETH per second for whitelist
+    "Lab Printer A",
+    "High-resolution 3D printer"
+)
+
+// Hedera networks (8 decimals):
+Constructor(
+    0x0000000000000000000000000000000000000000,  // Zero address for HBAR
+    100000,                                      // 0.001 HBAR per second
+    50000,                                       // 0.0005 HBAR per second for whitelist
+    "Lab Printer A",
+    "High-resolution 3D printer"
+)
+```
+
+**Important Notes:**
+- The contract automatically detects the network and sets the correct currency symbol
+- Always use the zero address (0x0000000000000000000000000000000000000000) for native token usage
+- Use the `debug_contract.py` script to verify your deployment has correct values
+
+### Hedera Testnet Deployment
+
+```bash
+# Hedera Testnet Configuration
+Network: Hedera Testnet
+Chain ID: 296
+Currency: HBAR
+RPC URL: https://testnet.hashio.io/api
+Block Explorer: https://hashscan.io/testnet
+
+# To deploy on Hedera testnet:
+# 1. Add Hedera testnet to your wallet:
+#    - Network Name: Hedera Testnet
+#    - RPC URL: https://testnet.hashio.io/api
+#    - Chain ID: 296
+#    - Currency Symbol: HBAR
+#    - Block Explorer: https://hashscan.io/testnet
+# 2. Get testnet HBAR from: https://portal.hedera.com/
+# 3. Deploy contracts using the same process as Ethereum
+# 4. Native token payments will use HBAR instead of ETH
 ```
 
 ### 2. Set Up Web Application
@@ -43,10 +117,13 @@
 cd infralink-webapp
 npm install
 
-# Update contract addresses in:
-# - src/components/UserProfile.tsx
-# - src/components/WhitelistManager.tsx
-# Set INFRALINK_INFO_ADDRESS to your deployed Info contract
+# Update the InfraLink Info contract address in these files:
+# 1. src/components/UserProfile.tsx - Line 27
+# 2. src/components/WhitelistManager.tsx - Line 37
+# Replace "0x0000000000000000000000000000000000000000" with your deployed Info contract address
+
+# Example:
+# const INFRALINK_INFO_ADDRESS = "0x1234567890123456789012345678901234567890";
 
 npm run dev
 ```
@@ -60,8 +137,11 @@ The app will be available at `http://localhost:5173`
 pip install -r requirements.txt
 
 # Edit devicelocal.py and update:
-# - INFURA_URL: Your Ethereum node URL
+# - INFURA_URL: Your blockchain node URL (Infura, Alchemy, or Hedera testnet)
 # - DEVICE_CONTRACT_ADDRESS: Your deployed contract address
+
+# For Hedera testnet, use:
+# INFURA_URL = "https://testnet.hashio.io/api"
 
 # Run the monitor
 python devicelocal.py
@@ -145,24 +225,26 @@ python devicelocal.py
 
 ## 💰 Native Token Support (New in v2.0)
 
-### Using Native ETH Instead of ERC20
+### Using Native Tokens (ETH/HBAR) Instead of ERC20
 
 1. **Deploy Device Contract with Native Token Support**
    ```solidity
-   // Set _useNativeToken to true in constructor
    // Set _token to zero address (0x0000000000000000000000000000000000000000)
-   // Set fees in wei (1 ETH = 1e18 wei)
+   // This automatically sets useNativeToken to true in the contract
+   // Set fees in wei (1 ETH = 1e18 wei, 1 HBAR = 1e8 tinybars)
    ```
 
 2. **User Experience with Native Tokens**
    - No token approval required
-   - Direct ETH payment to contract
-   - Fees shown in ETH instead of token units
-   - Automatic balance checking for ETH
+   - Direct ETH/HBAR payment to contract
+   - Fees shown in ETH/HBAR instead of token units
+   - Automatic balance checking for native currency
 
-3. **Device Owner Benefits**
+3. **Network-Specific Benefits**
+   - **Ethereum**: Familiar ETH payments, broad wallet support
+   - **Hedera**: Fast transactions, low fees, enterprise-grade security
    - Simpler user experience (no token approval step)
-   - Direct ETH collection
+   - Direct native currency collection
    - Lower gas costs for users
    - Broader user accessibility
    - Monitor will show device status and countdown
@@ -206,10 +288,17 @@ python devicelocal.py
 
 ### Testnet Deployment
 
-1. **Deploy to Sepolia/Goerli** testnet
-2. **Get testnet ETH** from faucets
-3. **Test with real wallet** interactions
-4. **Verify contract** on Etherscan
+1. **Deploy to Ethereum Testnets** (Sepolia/Goerli)
+   - Get testnet ETH from faucets
+   - Test with real wallet interactions
+   - Verify contracts on Etherscan
+
+2. **Deploy to Hedera Testnet** (Recommended for fast, low-cost testing)
+   - Get testnet HBAR from https://portal.hedera.com/
+   - Add Hedera testnet to MetaMask (see configuration above)
+   - Deploy contracts using same process as Ethereum
+   - Verify contracts on https://hashscan.io/testnet
+   - Test native HBAR payments
 
 ## 📊 Monitoring & Analytics
 
@@ -253,26 +342,64 @@ python devicelocal.py
 
 5. **"Connection failed"**
    - Check RPC URL in Python script
+   - For Hedera: Use https://testnet.hashio.io/api
+   - For Ethereum: Use Infura/Alchemy URL
    - Verify contract address is correct
-   - Ensure network connectivity
+   - Ensure network connectivity and correct chain ID
 
 6. **Python script errors**
    - Install dependencies: `pip install web3`
    - Check contract ABI matches deployed contract
    - Verify network connection and RPC endpoint
+   - For Hedera: Ensure using correct RPC URL and chain ID
+
+7. **Network-specific issues**
+   - **Ethereum**: Check gas prices and network congestion
+   - **Hedera**: Verify HBAR balance and account permissions
+   - **All networks**: Confirm wallet is connected to correct network
+
+8. **Insufficient ETH/HBAR sent error on Hedera**
+   - **CRITICAL**: If you get "Insufficient ETH sent" on Hedera, the contract was deployed with the old version
+   - The contract is using 18 decimals (ETH) instead of 8 decimals (HBAR)
+   - **Solution**: Redeploy the contract with the updated `devicecontract.sol` that properly detects Hedera networks
+   - Updated contract will show "HBAR" symbol and use 8 decimals for proper fee calculation
+   - Run `python debug_contract.py` to verify contract values
+
+9. **Fee calculation issues**
+   - **Ethereum**: 1 ETH = 1e18 wei (18 decimals)
+   - **Hedera**: 1 HBAR = 1e8 tinybars (8 decimals)
+   - For 0.001 HBAR/second fee on Hedera: deploy with `_feePerSecond = 100000`
+   - For 0.001 ETH/second fee on Ethereum: deploy with `_feePerSecond = 1000000000000000`
+   - Use the debug script to verify deployed values
 
 7. **Whitelist issues**
    - Only contract owner can modify whitelist
    - Whitelist names are optional but recommended
    - Free access requires whitelist fee to be set to 0
 
+8. **Currency and fee confusion**
+   - **Problem**: Wrong fee calculation for different networks
+   - **Solution**: Use network-specific fee values from NETWORK_CONFIG.md
+   - **Ethereum**: Fees in ETH (wei units: 1 ETH = 10^18 wei)
+   - **Hedera**: Fees in HBAR (tinybar units: 1 HBAR = 10^8 tinybars)
+   - **Other EVM**: Usually 18 decimals (10^18 smallest units)
+   - **Debug**: Run `python debug_contract.py` to verify contract values
+
+9. **Contract deployed with wrong fee values**
+   - **Problem**: Payments fail due to incorrect fee denomination
+   - **Symptoms**: "Insufficient ETH/HBAR sent" errors even with correct amounts
+   - **Solution**: Redeploy contract with correct network-specific values
+   - **Prevention**: Use the fee table in SETUP.md for deployment parameters
+
 ### Debug Tips
 
+- Use `python debug_contract.py` to check contract deployment values
 - Check browser console for errors
 - Verify contract addresses are correct
 - Ensure sufficient token balance
 - Check network connectivity
 - Monitor contract events on block explorer
+- Verify decimals match the network (8 for Hedera, 18 for Ethereum)
 
 ## 🔄 Maintenance
 

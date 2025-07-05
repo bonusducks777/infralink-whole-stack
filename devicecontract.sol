@@ -62,9 +62,23 @@ contract DeviceAccess {
         useNativeToken = (_token == address(0));
         
         if (useNativeToken) {
-            tokenName = "Ether";
-            tokenSymbol = "ETH";
-            tokenDecimals = 18;
+            // Detect network and set appropriate native token info
+            if (block.chainid == 296) {
+                // Hedera testnet
+                tokenName = "HBAR";
+                tokenSymbol = "HBAR";
+                tokenDecimals = 8; // HBAR has 8 decimal places (tinybars)
+            } else if (block.chainid == 295) {
+                // Hedera mainnet
+                tokenName = "HBAR";
+                tokenSymbol = "HBAR";
+                tokenDecimals = 8;
+            } else {
+                // Ethereum or other EVM networks
+                tokenName = "Ether";
+                tokenSymbol = "ETH";
+                tokenDecimals = 18;
+            }
         } else {
             // Get token information
             try IERC20(token).name() returns (string memory name) {
@@ -96,20 +110,21 @@ contract DeviceAccess {
         
         if (cost > 0) {
             if (useNativeToken) {
-                require(msg.value >= cost, "Insufficient ETH sent");
+                string memory currencyName = tokenSymbol;
+                require(msg.value >= cost, string(abi.encodePacked("Insufficient ", currencyName, " sent")));
                 
-                // Refund excess ETH
+                // Refund excess native token
                 if (msg.value > cost) {
                     payable(msg.sender).transfer(msg.value - cost);
                 }
             } else {
-                require(msg.value == 0, "ETH sent but ERC20 token required");
+                require(msg.value == 0, "Native token sent but ERC20 token required");
                 require(IERC20(token).allowance(msg.sender, address(this)) >= cost, "Insufficient allowance");
                 require(IERC20(token).balanceOf(msg.sender) >= cost, "Insufficient balance");
                 IERC20(token).transferFrom(msg.sender, address(this), cost);
             }
         } else {
-            require(msg.value == 0, "ETH sent but access is free");
+            require(msg.value == 0, "Native token sent but access is free");
         }
 
         lastActivatedBy = msg.sender;
@@ -145,12 +160,7 @@ contract DeviceAccess {
         uint256 _timeRemaining,
         string memory _tokenName,
         string memory _tokenSymbol,
-        uint8 _tokenDecimals,
-        string memory _deviceName,
-        string memory _deviceDescription,
-        bool _lastUserWasWhitelisted,
-        string memory _whitelistName,
-        bool _useNativeToken
+        uint8 _tokenDecimals
     ) {
         _feePerSecond = whitelist[user] ? whitelistFeePerSecond : feePerSecond;
         _isActive = isActive && block.timestamp < sessionEndsAt;
@@ -162,11 +172,30 @@ contract DeviceAccess {
         _tokenName = tokenName;
         _tokenSymbol = tokenSymbol;
         _tokenDecimals = tokenDecimals;
+    }
+
+    function getDeviceDetails() external view returns (
+        string memory _deviceName,
+        string memory _deviceDescription,
+        bool _useNativeToken,
+        bool _lastUserWasWhitelisted,
+        uint256 _whitelistFeePerSecond
+    ) {
         _deviceName = deviceName;
         _deviceDescription = deviceDescription;
-        _lastUserWasWhitelisted = lastUserWasWhitelisted;
-        _whitelistName = whitelistNames[user];
         _useNativeToken = useNativeToken;
+        _lastUserWasWhitelisted = lastUserWasWhitelisted;
+        _whitelistFeePerSecond = whitelistFeePerSecond;
+    }
+
+    function getUserWhitelistInfo(address user) external view returns (
+        string memory _whitelistName,
+        bool _isWhitelisted,
+        uint256 _applicableFee
+    ) {
+        _whitelistName = whitelistNames[user];
+        _isWhitelisted = whitelist[user];
+        _applicableFee = whitelist[user] ? whitelistFeePerSecond : feePerSecond;
     }
 
     function setFee(uint256 _fee, uint256 _whitelistFee) external onlyOwner {

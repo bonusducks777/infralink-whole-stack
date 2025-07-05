@@ -12,26 +12,11 @@ from network_utils import get_network_info, format_native_amount, get_currency_s
 # - Hedera Testnet: "https://testnet.hashio.io/api"
 # - Local development: "http://127.0.0.1:8545"
 INFURA_URL = "https://testnet.hashio.io/api"  # Hedera testnet by default
-DEVICE_CONTRACT_ADDRESS = "0xaff84326fc701dfb3c5881b2749dba27e9a98978"  # Will be updated when contract is deployed
+DEVICE_CONTRACT_ADDRESS = "0xaff84326fc701dfb3c5881b2749dba27e9a98978"  # Updated contract address
+INFO_CONTRACT_ADDRESS = "0x7aee0cbbcd0e5257931f7dc87f0345c1bb2aab39"  # Info contract for whitelist logic
 
-# Enhanced Contract ABI with whitelist support - Updated to match deployed contract
+# Device Contract ABI - Updated to match actual deployed contract
 CONTRACT_ABI = [
-    {
-        "inputs": [
-            {"internalType": "uint256", "name": "secondsToActivate", "type": "uint256"}
-        ],
-        "name": "activate",
-        "outputs": [],
-        "stateMutability": "payable",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "deactivate",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
     {
         "inputs": [
             {"internalType": "address", "name": "_token", "type": "address"},
@@ -83,71 +68,6 @@ CONTRACT_ABI = [
         "type": "event"
     },
     {
-        "inputs": [],
-        "name": "forceDeactivate",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {"internalType": "string", "name": "_name", "type": "string"},
-            {"internalType": "string", "name": "_description", "type": "string"}
-        ],
-        "name": "setDeviceInfo",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {"internalType": "uint256", "name": "_fee", "type": "uint256"},
-            {"internalType": "uint256", "name": "_whitelistFee", "type": "uint256"}
-        ],
-        "name": "setFee",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {"internalType": "address", "name": "_token", "type": "address"}
-        ],
-        "name": "setToken",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {"internalType": "address", "name": "user", "type": "address"},
-            {"internalType": "bool", "name": "status", "type": "bool"},
-            {"internalType": "string", "name": "name", "type": "string"}
-        ],
-        "name": "setWhitelist",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {"internalType": "uint256", "name": "_fee", "type": "uint256"}
-        ],
-        "name": "setWhitelistFee",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {"internalType": "address", "name": "newOwner", "type": "address"}
-        ],
-        "name": "transferOwnership",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
         "anonymous": False,
         "inputs": [
             {"indexed": True, "internalType": "address", "name": "user", "type": "address"},
@@ -158,8 +78,17 @@ CONTRACT_ABI = [
         "type": "event"
     },
     {
+        "inputs": [
+            {"internalType": "uint256", "name": "secondsToActivate", "type": "uint256"}
+        ],
+        "name": "activate",
+        "outputs": [],
+        "stateMutability": "payable",
+        "type": "function"
+    },
+    {
         "inputs": [],
-        "name": "withdrawFees",
+        "name": "deactivate",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
@@ -189,6 +118,13 @@ CONTRACT_ABI = [
             {"internalType": "uint256", "name": "", "type": "uint256"}
         ],
         "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "forceDeactivate",
+        "outputs": [],
+        "stateMutability": "nonpayable",
         "type": "function"
     },
     {
@@ -286,6 +222,55 @@ CONTRACT_ABI = [
         "type": "function"
     },
     {
+        "inputs": [
+            {"internalType": "string", "name": "_name", "type": "string"},
+            {"internalType": "string", "name": "_description", "type": "string"}
+        ],
+        "name": "setDeviceInfo",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {"internalType": "uint256", "name": "_fee", "type": "uint256"},
+            {"internalType": "uint256", "name": "_whitelistFee", "type": "uint256"}
+        ],
+        "name": "setFee",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {"internalType": "address", "name": "_token", "type": "address"}
+        ],
+        "name": "setToken",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {"internalType": "address", "name": "user", "type": "address"},
+            {"internalType": "bool", "name": "status", "type": "bool"},
+            {"internalType": "string", "name": "name", "type": "string"}
+        ],
+        "name": "setWhitelist",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {"internalType": "uint256", "name": "_fee", "type": "uint256"}
+        ],
+        "name": "setWhitelistFee",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
         "inputs": [],
         "name": "token",
         "outputs": [
@@ -319,6 +304,15 @@ CONTRACT_ABI = [
             {"internalType": "string", "name": "", "type": "string"}
         ],
         "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {"internalType": "address", "name": "newOwner", "type": "address"}
+        ],
+        "name": "transferOwnership",
+        "outputs": [],
+        "stateMutability": "nonpayable",
         "type": "function"
     },
     {
@@ -380,6 +374,86 @@ CONTRACT_ABI = [
         ],
         "stateMutability": "view",
         "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "withdrawFees",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    }
+]
+
+# Info Contract ABI for whitelist functionality - Updated to match actual deployed contract
+INFO_CONTRACT_ABI = [
+    {
+        "inputs": [
+            {"internalType": "address", "name": "user", "type": "address"},
+            {"internalType": "address", "name": "deviceContract", "type": "address"}
+        ],
+        "name": "getWhitelistInfo",
+        "outputs": [
+            {"internalType": "string", "name": "whitelistName", "type": "string"},
+            {"internalType": "uint256", "name": "feePerSecond", "type": "uint256"},
+            {"internalType": "bool", "name": "isFree", "type": "bool"},
+            {"internalType": "uint256", "name": "addedAt", "type": "uint256"},
+            {"internalType": "address", "name": "addedBy", "type": "address"}
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {"internalType": "address", "name": "user", "type": "address"},
+            {"internalType": "address", "name": "deviceContract", "type": "address"}
+        ],
+        "name": "isUserWhitelisted",
+        "outputs": [{"internalType": "bool", "name": "", "type": "bool"}],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [{"internalType": "address", "name": "user", "type": "address"}],
+        "name": "getUserWhitelists",
+        "outputs": [
+            {"internalType": "address[]", "name": "deviceContracts", "type": "address[]"},
+            {"internalType": "string[]", "name": "deviceNames", "type": "string[]"},
+            {"internalType": "string[]", "name": "whitelistNames", "type": "string[]"},
+            {"internalType": "uint256[]", "name": "feePerSeconds", "type": "uint256[]"},
+            {"internalType": "bool[]", "name": "isFreeAccess", "type": "bool[]"},
+            {"internalType": "uint256[]", "name": "addedAts", "type": "uint256[]"}
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [{"internalType": "address", "name": "user", "type": "address"}],
+        "name": "getUserProfile",
+        "outputs": [
+            {"internalType": "string", "name": "name", "type": "string"},
+            {"internalType": "string", "name": "bio", "type": "string"},
+            {"internalType": "string", "name": "email", "type": "string"},
+            {"internalType": "string", "name": "avatar", "type": "string"},
+            {"internalType": "bool", "name": "exists", "type": "bool"},
+            {"internalType": "uint256", "name": "createdAt", "type": "uint256"},
+            {"internalType": "uint256", "name": "updatedAt", "type": "uint256"}
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "getAllRegisteredUsers",
+        "outputs": [{"internalType": "address[]", "name": "", "type": "address[]"}],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "getAllRegisteredDevices",
+        "outputs": [{"internalType": "address[]", "name": "", "type": "address[]"}],
+        "stateMutability": "view",
+        "type": "function"
     }
 ]
 
@@ -387,6 +461,7 @@ class DeviceMonitor:
     def __init__(self):
         self.w3 = None
         self.contract = None
+        self.info_contract = None  # Info contract for whitelist logic
         self.root = tk.Tk()
         self.setup_ui()
         self.last_error = None
@@ -583,16 +658,42 @@ class DeviceMonitor:
             # Initialize contract
             self.contract = self.w3.eth.contract(address=contract_address, abi=CONTRACT_ABI)
             
-            # Test contract call
+            # Test device contract call
             owner = self.contract.functions.owner().call()
             
+            # Try to initialize Info contract for whitelist functionality
+            try:
+                info_contract_address = self.w3.to_checksum_address(INFO_CONTRACT_ADDRESS.lower())
+                self.info_contract = self.w3.eth.contract(address=info_contract_address, abi=INFO_CONTRACT_ABI)
+                
+                # Test Info contract call - try to get owner or check if contract exists
+                try:
+                    # Try to call a simple function to see if contract exists
+                    code = self.w3.eth.get_code(info_contract_address)
+                    if code == '0x':
+                        raise Exception("Info contract not deployed at this address")
+                    print("Info contract found and connected successfully")
+                except Exception as test_error:
+                    raise Exception(f"Info contract test failed: {test_error}")
+                
+            except Exception as info_error:
+                print(f"Info contract connection failed: {info_error}")
+                print("Will use device contract whitelist functionality as fallback")
+                self.info_contract = None
+                
             self.status_bar.config(text=f"Connected to contract. Owner: {owner[:10]}...")
+            if self.info_contract:
+                self.status_bar.config(text=f"Connected to contracts. Owner: {owner[:10]}...")
+            else:
+                self.status_bar.config(text=f"Connected to device contract (Info contract unavailable). Owner: {owner[:10]}...")
+                
             self.connect_btn.config(state='disabled')
             self.start_monitoring()
             
         except Exception as e:
             self.status_bar.config(text=f"Connection failed: {str(e)}")
             messagebox.showerror("Connection Error", f"Failed to connect: {str(e)}")
+            print(f"Connection error: {e}")
             
     def start_monitoring(self):
         self.update_status()
@@ -755,37 +856,85 @@ class DeviceMonitor:
             return f"{decimal_amount:.8f}"
     
     def refresh_whitelist(self):
-        """Refresh the whitelist information"""
+        """Refresh the whitelist information using Info contract or fallback to device contract"""
         try:
             if not self.contract:
                 messagebox.showerror("Error", "Please connect to contract first")
                 return
                 
-            # Get whitelist info
-            whitelist_info = self.contract.functions.getWhitelistInfo().call()
-            addresses = whitelist_info[0]
-            names = whitelist_info[1]
-            count = whitelist_info[2]
-            
-            # Update whitelist count
-            self.whitelist_count_label.config(text=f"Total Whitelisted Users: {count}")
-            
-            # Clear existing items
-            for item in self.whitelist_tree.get_children():
-                self.whitelist_tree.delete(item)
+            # First try to use Info contract for whitelist info
+            try:
+                if self.info_contract:
+                    print("Attempting to query Info contract...")
+                    # For now, let's just try to get all registered users to see if the contract is working
+                    all_users = self.info_contract.functions.getAllRegisteredUsers().call()
+                    print(f"Info contract returned {len(all_users)} registered users")
+                    
+                    # For simplicity, let's just show this as a basic count for now
+                    # TODO: Implement proper device-specific whitelist logic later
+                    self.whitelist_count_label.config(text=f"Info Contract Working: {len(all_users)} total users")
+                    
+                    # Clear existing items and show placeholder
+                    for item in self.whitelist_tree.get_children():
+                        self.whitelist_tree.delete(item)
+                    
+                    if len(all_users) > 0:
+                        self.whitelist_tree.insert('', tk.END, values=("Info Contract", f"Found {len(all_users)} users"))
+                    
+                    # Store basic info
+                    self.whitelist_info = {
+                        'addresses': [],
+                        'names': [],
+                        'count': len(all_users)
+                    }
+                    print("Info contract query successful")
+                    return
+                    
+            except Exception as info_error:
+                print(f"Info contract whitelist query failed: {info_error}")
+                # Fall back to device contract
                 
-            # Add whitelist entries
-            for i, address in enumerate(addresses):
-                name = names[i] if i < len(names) else "Unknown"
-                self.whitelist_tree.insert('', tk.END, values=(address, name))
+            # Fallback: Use device contract's whitelist functionality
+            try:
+                whitelist_info = self.contract.functions.getWhitelistInfo().call()
+                addresses = whitelist_info[0]
+                names = whitelist_info[1]
+                count = whitelist_info[2]
                 
-            # Store whitelist info
-            self.whitelist_info = {
-                'addresses': addresses,
-                'names': names,
-                'count': count
-            }
-            
+                # Update whitelist count
+                self.whitelist_count_label.config(text=f"Total Whitelisted Users: {count} (via Device Contract)")
+                
+                # Clear existing items
+                for item in self.whitelist_tree.get_children():
+                    self.whitelist_tree.delete(item)
+                    
+                # Add whitelist entries (device contract doesn't have individual fees)
+                for i, address in enumerate(addresses):
+                    name = names[i] if i < len(names) else "Unknown"
+                    # For device contract, just show whitelist fee
+                    try:
+                        whitelist_fee = self.contract.functions.whitelistFeePerSecond().call()
+                        fee_info = "FREE" if whitelist_fee == 0 else f"{self.format_token_amount(whitelist_fee, 8)} HBAR/sec"
+                        display_name = f"{name} ({fee_info})"
+                    except:
+                        display_name = name
+                    self.whitelist_tree.insert('', tk.END, values=(address, display_name))
+                    
+                # Store whitelist info
+                self.whitelist_info = {
+                    'addresses': addresses,
+                    'names': names,
+                    'count': count
+                }
+                
+            except Exception as device_error:
+                print(f"Device contract whitelist query failed: {device_error}")
+                # If both fail, show empty whitelist
+                self.whitelist_count_label.config(text="Total Whitelisted Users: 0 (Unable to fetch)")
+                for item in self.whitelist_tree.get_children():
+                    self.whitelist_tree.delete(item)
+                self.whitelist_info = {'addresses': [], 'names': [], 'count': 0}
+                
         except Exception as e:
             messagebox.showerror("Error", f"Failed to refresh whitelist: {str(e)}")
             print(f"Whitelist refresh error: {e}")

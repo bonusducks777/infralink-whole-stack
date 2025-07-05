@@ -1,7 +1,7 @@
 # InfraLink Issue Fix Summary
 
 ## Problem Identified
-The contract at `0x462e7F95b200F6f7B59cd62b7940D7Ac97E67f2F` was deployed with the old version of `devicecontract.sol` that doesn't properly detect Hedera networks.
+The contract at `0x462e7F95b200F6f7B59cd62b7940D7Ac97E67f2F` was deployed with the old version of `devicecontract.sol` that doesn't properly detect Hedera networks. The new contract has been redeployed at `0xaff84326fc701dfb3c5881b2749dba27e9a98978` with the correct cross-chain functionality.
 
 ## Current Contract State
 - **Network**: Hedera Testnet (Chain ID: 296)

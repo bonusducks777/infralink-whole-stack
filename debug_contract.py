@@ -12,7 +12,7 @@ from network_utils import (
 
 # Configuration
 HEDERA_TESTNET_RPC = "https://testnet.hashio.io/api"
-CONTRACT_ADDRESS = "0x462e7F95b200F6f7B59cd62b7940D7Ac97E67f2F"
+CONTRACT_ADDRESS = "0xaff84326fc701dfb3c5881b2749dba27e9a98978"
 
 # Minimal ABI for debugging
 MINIMAL_ABI = [
@@ -84,7 +84,8 @@ def main():
     
     # Initialize contract
     try:
-        contract = w3.eth.contract(address=CONTRACT_ADDRESS, abi=MINIMAL_ABI)
+        contract_address = w3.to_checksum_address(CONTRACT_ADDRESS.lower())
+        contract = w3.eth.contract(address=contract_address, abi=MINIMAL_ABI)
         print("✅ Contract initialized successfully")
     except Exception as e:
         print(f"❌ Failed to initialize contract: {e}")

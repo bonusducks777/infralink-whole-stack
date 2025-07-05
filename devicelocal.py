@@ -12,7 +12,7 @@ from network_utils import get_network_info, format_native_amount, get_currency_s
 # - Hedera Testnet: "https://testnet.hashio.io/api"
 # - Local development: "http://127.0.0.1:8545"
 INFURA_URL = "https://testnet.hashio.io/api"  # Hedera testnet by default
-DEVICE_CONTRACT_ADDRESS = "0x462e7F95b200F6f7B59cd62b7940D7Ac97E67f2F"  # Will be updated when contract is deployed
+DEVICE_CONTRACT_ADDRESS = "0xaff84326fc701dfb3c5881b2749dba27e9a98978"  # Will be updated when contract is deployed
 
 # Enhanced Contract ABI with whitelist support - Updated to match deployed contract
 CONTRACT_ABI = [

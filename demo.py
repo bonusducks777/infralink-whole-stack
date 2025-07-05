@@ -20,7 +20,7 @@ class InfraLinkDemo:
         # Demo configuration
         self.demo_config = {
             "rpc_url": "http://localhost:8545",  # Default Ganache/Hardhat
-            "contract_address": "0x0000000000000000000000000000000000000000",
+            "contract_address": "0xaff84326fc701dfb3c5881b2749dba27e9a98978",
             "token_address": "0x0000000000000000000000000000000000000000",
             "private_key": "0x0000000000000000000000000000000000000000000000000000000000000000",
             "fee_per_second": 1000000000000000  # 0.001 tokens per second
@@ -235,6 +235,8 @@ class InfraLinkDemo:
                     {"inputs": [{"type": "uint256"}], "name": "activate", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
                     {"inputs": [], "name": "deactivate", "outputs": [], "stateMutability": "nonpayable", "type": "function"}
                 ]
+                # Ensure contract address is checksummed
+                contract_addr = self.w3.to_checksum_address(contract_addr.lower())
                 self.contract = self.w3.eth.contract(address=contract_addr, abi=device_abi)
                 self.log_message(f"Device contract initialized: {contract_addr}")
             

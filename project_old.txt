@@ -1,0 +1,248 @@
+🧠 Project Name: InfraLink
+Open hardware service access via smart contracts — for agents, users, and devices.
+
+✨ Version 2.0 Features
+- Native Token Support (ETH + ERC20)
+- User Profile Management
+- Central Registry Contract
+- Advanced Whitelist System
+- Comprehensive Analytics
+- Enhanced Error Handling
+
+🪙 Smart Contract System (EVM)
+Two-contract architecture for complete hardware device access management:
+
+🔑 Core Logic (DeviceAccess Contract)
+Accepts both ERC20 tokens AND native ETH payments for device activation.
+
+Fee model: 
+- feePerSecond (in tokens/ETH, can be 0)
+- whitelistFeePerSecond (separate rate for whitelisted users)
+
+Users prepay by sending tokens/ETH; device stays active for amount / feePerSecond seconds.
+
+Advanced whitelist features:
+- Named users with custom identifiers
+- Free access (fee = 0)
+- Custom fees per user group
+- Cross-device whitelist management
+
+Device broadcasts comprehensive session data:
+- lastActivatedBy (address)
+- currentSessionEndsAt (timestamp)
+- Whether it's currently active
+- lastUserWasWhitelisted (status)
+- Device name and description
+- Token information (name, symbol, decimals)
+
+Manual deactivate() call allowed to end session early.
+
+Events: DeviceActivated, DeviceDeactivated, FeeChanged, WhitelistUpdated, DeviceInfoUpdated
+
+🏢 Info Contract (InfraLinkInfo)
+Central registry for user profiles and device information:
+
+User Profile Management:
+- Complete user profiles (name, bio, email, avatar)
+- Device access history and statistics
+- Cross-device whitelist tracking
+- Activity analytics and reporting
+
+Device Registry:
+- Centralized device information storage
+- Whitelist management across multiple devices
+- Usage analytics and revenue tracking
+- Device discovery and access overview
+
+🛠️ Admin Configurables
+Owner settable (transferOwnership)
+
+DeviceAccess Contract:
+- feePerSecond (regular user rate)
+- whitelistFeePerSecond (whitelisted user rate)
+- ERC20 token address (address(0) for native ETH)
+- whitelist addresses with custom names (add/remove)
+- Device name and description
+- Force deactivation capabilities
+
+InfraLinkInfo Contract:
+- User profile management (name, bio, email, avatar)
+- Device registry and whitelist coordination
+- Analytics and usage tracking
+- Cross-device access management
+
+Public getDeviceInfo() view function returns:
+- Current fees (regular and whitelist)
+- Active status and session details
+- Device name, description, and metadata
+- Token information (name, symbol, decimals, native status)
+- User whitelist status and applicable fees
+- Session end time and current user address
+
+Public getWhitelistInfo() view function returns:
+- All whitelisted users with names and addresses
+- Custom fee rates for each user
+- Registration timestamps and status
+
+Enhanced getDeviceInfo() also returns:
+- Current user address and session details
+- Session end time and remaining duration
+- Token type and payment information
+- User whitelist status and applicable fees
+- Device activity and usage analytics
+
+🌐 React App (RainbowKit, QR, React)
+Build a comprehensive web interface for users and device owners:
+
+🔍 User Flow
+Open app → Create/manage user profile → Scan QR code (or enter address manually)
+
+App fetches device contract info and user profile data
+
+Display comprehensive device information:
+- Device name, description, and status
+- Current fees (regular and whitelist rates)
+- Token information (native ETH or ERC20)
+- User's whitelist status and applicable fees
+- Session details and remaining time
+- Payment options (ETH or tokens)
+
+Enhanced features:
+- User profile management with bio, email, avatar
+- Device access history and analytics
+- Whitelist status across all devices
+- Cross-device access overview
+- Payment history and usage statistics
+
+🏢 Owner Flow
+Device owner interface for management:
+- QR code generation for device sharing
+- Whitelist management with user names
+- Fee configuration (regular and whitelist)
+- Device information updates
+- Revenue tracking and analytics
+- User activity monitoring
+
+� Tech Stack
+React + Vite + TypeScript
+RainbowKit + Wagmi + ethers.js
+shadcn/ui + Tailwind CSS
+react-qr-scanner + qrcode generation
+Modern responsive design with dark mode
+Open app → scan QR code (or enter address manually)
+
+App fetches device contract info using ABI + address
+
+Display:
+
+Is device active?
+
+When will it be free?
+
+Cost per second
+
+Token type
+
+If user is whitelisted
+
+Option to subscribe for "free soon" notification (non-functional stub)
+
+If inactive OR session is ending:
+
+User can pay ERC20 token for x seconds of usage
+
+App calculates how much to pay (e.g., 10 mins = feePerSecond * 600)
+
+Sends approval + transaction
+
+Show session confirmation after transaction
+
+🔧 Tech Stack
+React + Vite
+
+RainbowKit + Wagmi
+
+ethers.js
+
+react-qr-scanner
+
+Styled clean minimal interface
+
+🐍 Python SDK (IoT Device Listener)
+SDK to be run on the hardware side (e.g., EV charger Raspberry Pi):
+
+🎯 Responsibilities
+Given:
+
+Device’s contract address
+
+Wallet + RPC credentials
+
+Poll the contract every ~60s using web3.py
+
+Fetch:
+
+Is active?
+
+Who activated?
+
+Session ends at?
+
+Fee & token info
+
+Display live status in Tkinter GUI:
+
+Green/Red "ACTIVE/INACTIVE"
+
+Wallet currently using it
+
+Countdown timer
+
+Will NOT perform on-chain calls (no signing needed)
+
+❌ Excluded for Now
+No streaming payments (e.g., Sablier / Superfluid)
+No automated contract deployment (done manually)
+No off-chain notification system (just placeholder)
+Minimal backend dependency — primarily on-chain v2.0
+
+📦 Deliverables
+✅ Solidity contracts:
+- DeviceAccess.sol (main device contract with native token support)
+- InfraLinkInfo.sol (user profiles and device registry)
+- TestToken.sol (development ERC20 token)
+
+✅ React app with:
+- Complete user profile management system
+- Device scanning and manual address entry
+- Comprehensive device information display
+- Payment workflows (ETH and ERC20 tokens)
+- Whitelist management and analytics
+- Owner management interface with QR generation
+- RainbowKit integration with enhanced error handling
+- Modern UI with dark mode and responsive design
+
+✅ Python script (Enhanced Tkinter app) that:
+- Monitors both contracts with configurable intervals
+- Displays comprehensive device and user information
+- Shows native token support and payment details
+- Provides tabbed interface for organized information
+- Includes whitelist management and user analytics
+- Features enhanced error handling and connection management
+
+✅ Documentation:
+- README.md with complete feature overview
+- SETUP.md with deployment and configuration guide
+- USER_GUIDE.md with comprehensive usage instructions
+- STATUS.md with current project status
+- IMPLEMENTATION_SUMMARY.md with technical details
+
+🚀 Version 2.0 Complete
+All components are production-ready with advanced features:
+- Native token support (ETH + ERC20)
+- User profile management system
+- Central registry architecture
+- Enhanced whitelist capabilities
+- Comprehensive analytics and reporting
+- Modern UI/UX with mobile optimization
+- Robust error handling and validation

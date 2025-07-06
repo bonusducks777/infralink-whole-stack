@@ -1,306 +1,247 @@
-#!/usr/bin/env python3
 """
 InfraLink Device Payload Controller
-===================================
-
-This script allows you to trigger device enable/disable actions with customizable payloads.
-You can modify the payloads below to execute any commands when a device is activated or deactivated.
-
-Usage:
-    python devicepayload.py enable    # Enable device payload
-    python devicepayload.py disable   # Disable device payload
-
-The script plays a sound effect and executes custom commands based on device state changes.
+Handles device enable/disable actions with customizable commands and sound effects.
+This script is called by devicelocal.py when device state changes occur.
 """
 
-import sys
 import os
+import sys
 import subprocess
-import pygame
 import time
+import pygame
 from pathlib import Path
 
-# =============================================================================
-# CONFIGURATION SECTION - MODIFY THESE TO CUSTOMIZE YOUR PAYLOADS
-# =============================================================================
+# === CONFIGURATION ===
+# Sound settings
+SOUND_ENABLED = True
+SOUND_FILE = "song.mp3"  # Place your sound file in the same directory
+SOUND_VOLUME = 0.7  # Volume level (0.0 to 1.0)
 
-# Sound Configuration
-SOUND_FILE = "song.mp3"  # Name of the sound file to play (must be in same directory)
-ENABLE_SOUND = True      # Set to False to disable sound effects
-
-# Device Enable Payload Configuration
-# These commands will be executed when the device is ENABLED/ACTIVATED
-# 
-# HOW TO ADD YOUR OWN COMMANDS:
-# 1. Each command is a list: ["program", "arg1", "arg2", ...]
-# 2. Add your commands to the list below
-# 3. Examples of useful payloads:
-#    - Send HTTP requests to APIs
-#    - Run other Python scripts
-#    - Execute system commands
-#    - Control hardware (LEDs, relays, etc.)
-#    - Send notifications
-#    - Log events to files
-#
-DEVICE_ENABLE_COMMANDS = [
-    # Example: Windows notification
-    ["powershell", "-Command", "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.MessageBox]::Show('Device is now ONLINE!', 'InfraLink', 'OK', 'Information')"],
-    
-    # Example: Print to console
-    # ["echo", "Device ENABLED at $(Get-Date)"],
-    
-    # Example: HTTP API call (requires curl)
-    # ["curl", "-X", "POST", "http://your-server.com/api/device/enable"],
-    
-    # Example: Run another Python script
-    # ["python", "your_enable_script.py"],
-    
-    # Example: Write to log file
-    # ["powershell", "-Command", "echo \"Device enabled at $(Get-Date)\" >> device.log"],
-    
-    # Add your custom enable commands here:
-    # ["your_command", "arg1", "arg2"],
+# Custom commands for device enable/disable
+# Modify these to control your specific device/hardware
+ENABLE_COMMANDS = [
+    # Example commands - replace with your actual device control commands
+    # "gpio write 18 1",  # Turn on GPIO pin 18
+    # "curl -X POST http://192.168.1.100/api/enable",  # HTTP API call
+    # "python turn_on_led.py",  # Run custom Python script
+    # "echo 'Device enabled' > /dev/ttyUSB0",  # Send serial command
 ]
 
-# Device Disable Payload Configuration  
-# These commands will be executed when the device is DISABLED/DEACTIVATED
-#
-# Same format as enable commands - add your custom disable actions here
-DEVICE_DISABLE_COMMANDS = [
-    # Example: Windows notification
-    ["powershell", "-Command", "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.MessageBox]::Show('Device is now OFFLINE!', 'InfraLink', 'OK', 'Warning')"],
-    
-    # Example: Print to console
-    # ["echo", "Device DISABLED at $(Get-Date)"],
-    
-    # Example: HTTP API call (requires curl)
-    # ["curl", "-X", "POST", "http://your-server.com/api/device/disable"],
-    
-    # Example: Run another Python script
-    # ["python", "your_disable_script.py"],
-    
-    # Example: Write to log file
-    # ["powershell", "-Command", "echo \"Device disabled at $(Get-Date)\" >> device.log"],
-    
-    # Add your custom disable commands here:
-    # ["your_command", "arg1", "arg2"],
+DISABLE_COMMANDS = [
+    # Example commands - replace with your actual device control commands
+    # "gpio write 18 0",  # Turn off GPIO pin 18
+    # "curl -X POST http://192.168.1.100/api/disable",  # HTTP API call
+    # "python turn_off_led.py",  # Run custom Python script
+    # "echo 'Device disabled' > /dev/ttyUSB0",  # Send serial command
 ]
 
-# Advanced Configuration
-COMMAND_TIMEOUT = 30     # Maximum time to wait for each command (seconds)
-LOG_COMMANDS = True      # Set to True to log command execution
-CONTINUE_ON_ERROR = True # Set to True to continue executing commands even if one fails
+# === SOUND SYSTEM ===
+def initialize_sound():
+    """Initialize pygame mixer for sound playback"""
+    try:
+        pygame.mixer.init()
+        pygame.mixer.music.set_volume(SOUND_VOLUME)
+        return True
+    except Exception as e:
+        print(f"Sound initialization failed: {e}")
+        return False
 
-# =============================================================================
-# END CONFIGURATION SECTION
-# =============================================================================
-
-class DevicePayloadController:
-    """
-    Controls device payloads and sound effects for InfraLink device state changes.
-    """
-    
-    def __init__(self):
-        self.script_dir = Path(__file__).parent.absolute()
-        self.sound_enabled = ENABLE_SOUND
-        self.init_sound_system()
-        
-    def init_sound_system(self):
-        """Initialize pygame mixer for sound effects."""
-        if not self.sound_enabled:
-            print("Sound effects disabled in configuration")
-            return
-            
-        try:
-            pygame.mixer.init()
-            self.sound_initialized = True
-            print("Sound system initialized successfully")
-        except pygame.error as e:
-            print(f"Warning: Could not initialize sound system: {e}")
-            self.sound_initialized = False
-            
-    def play_sound(self):
-        """Play the configured sound effect."""
-        if not self.sound_enabled or not self.sound_initialized:
-            return
-            
-        sound_path = self.script_dir / SOUND_FILE
-        
-        if not sound_path.exists():
-            print(f"Warning: Sound file '{SOUND_FILE}' not found at {sound_path}")
-            return
-            
-        try:
-            pygame.mixer.music.load(str(sound_path))
-            pygame.mixer.music.play()
-            print(f"Playing sound effect: {SOUND_FILE}")
-            
-            # Wait for sound to finish playing (optional)
-            while pygame.mixer.music.get_busy():
-                time.sleep(0.1)
-                
-        except pygame.error as e:
-            print(f"Error playing sound: {e}")
-        except Exception as e:
-            print(f"Unexpected error playing sound: {e}")
-            
-    def execute_command(self, command):
-        """
-        Execute a single command with error handling and logging.
-        
-        Args:
-            command (list): Command and arguments to execute
-            
-        Returns:
-            bool: True if command succeeded, False otherwise
-        """
-        if LOG_COMMANDS:
-            print(f"Executing command: {' '.join(command)}")
-            
-        try:
-            result = subprocess.run(
-                command,
-                timeout=COMMAND_TIMEOUT,
-                capture_output=True,
-                text=True,
-                check=True
-            )
-            
-            if LOG_COMMANDS and result.stdout:
-                print(f"Command output: {result.stdout.strip()}")
-                
-            return True
-            
-        except subprocess.TimeoutExpired:
-            print(f"Command timed out after {COMMAND_TIMEOUT} seconds: {' '.join(command)}")
-            return False
-            
-        except subprocess.CalledProcessError as e:
-            print(f"Command failed with exit code {e.returncode}: {' '.join(command)}")
-            if e.stderr:
-                print(f"Error output: {e.stderr.strip()}")
-            return False
-            
-        except FileNotFoundError:
-            print(f"Command not found: {command[0]}")
-            return False
-            
-        except Exception as e:
-            print(f"Unexpected error executing command: {e}")
-            return False
-            
-    def execute_command_list(self, commands, action_name):
-        """
-        Execute a list of commands for a specific action.
-        
-        Args:
-            commands (list): List of commands to execute
-            action_name (str): Name of the action for logging
-        """
-        if not commands:
-            print(f"No commands configured for {action_name}")
-            return
-            
-        print(f"\nExecuting {action_name} payload ({len(commands)} commands):")
-        print("=" * 50)
-        
-        success_count = 0
-        
-        for i, command in enumerate(commands, 1):
-            print(f"\n[{i}/{len(commands)}] Processing command...")
-            
-            if self.execute_command(command):
-                success_count += 1
-                print(f"✓ Command {i} completed successfully")
-            else:
-                print(f"✗ Command {i} failed")
-                if not CONTINUE_ON_ERROR:
-                    print("Stopping execution due to error (CONTINUE_ON_ERROR=False)")
-                    break
-                    
-        print(f"\n{action_name} payload completed: {success_count}/{len(commands)} commands succeeded")
-        
-    def device_enable(self):
-        """Execute device enable payload."""
-        print("🟢 DEVICE ENABLE triggered")
-        
-        # Play sound effect
-        self.play_sound()
-        
-        # Execute enable commands
-        self.execute_command_list(DEVICE_ENABLE_COMMANDS, "DEVICE ENABLE")
-        
-    def device_disable(self):
-        """Execute device disable payload."""
-        print("🔴 DEVICE DISABLE triggered")
-        
-        # Play sound effect
-        self.play_sound()
-        
-        # Execute disable commands
-        self.execute_command_list(DEVICE_DISABLE_COMMANDS, "DEVICE DISABLE")
-        
-    def cleanup(self):
-        """Clean up resources."""
-        if self.sound_initialized:
-            try:
-                pygame.mixer.quit()
-            except:
-                pass
-
-def print_usage():
-    """Print usage information."""
-    print("InfraLink Device Payload Controller")
-    print("==================================")
-    print()
-    print("Usage:")
-    print("  python devicepayload.py enable     # Trigger device enable payload")
-    print("  python devicepayload.py disable    # Trigger device disable payload")
-    print("  python devicepayload.py --help     # Show this help message")
-    print()
-    print("Configuration:")
-    print(f"  Sound file: {SOUND_FILE}")
-    print(f"  Sound enabled: {ENABLE_SOUND}")
-    print(f"  Enable commands: {len(DEVICE_ENABLE_COMMANDS)} configured")
-    print(f"  Disable commands: {len(DEVICE_DISABLE_COMMANDS)} configured")
-    print()
-    print("To customize payloads, edit the DEVICE_ENABLE_COMMANDS and")
-    print("DEVICE_DISABLE_COMMANDS lists at the top of this script.")
-
-def main():
-    """Main entry point."""
-    if len(sys.argv) != 2:
-        print_usage()
-        sys.exit(1)
-        
-    action = sys.argv[1].lower()
-    
-    if action in ['--help', '-h', 'help']:
-        print_usage()
-        sys.exit(0)
-        
-    if action not in ['enable', 'disable']:
-        print(f"Error: Unknown action '{action}'")
-        print_usage()
-        sys.exit(1)
-        
-    controller = DevicePayloadController()
+def play_sound(sound_file=None):
+    """Play sound effect when device is enabled"""
+    if not SOUND_ENABLED:
+        return
     
     try:
-        if action == 'enable':
-            controller.device_enable()
-        elif action == 'disable':
-            controller.device_disable()
+        if sound_file is None:
+            sound_file = SOUND_FILE
             
-        print(f"\n✓ {action.title()} payload execution completed")
+        if not os.path.exists(sound_file):
+            print(f"Sound file not found: {sound_file}")
+            return
+            
+        pygame.mixer.music.load(sound_file)
+        pygame.mixer.music.play()
+        print(f"Playing sound: {sound_file}")
         
-    except KeyboardInterrupt:
-        print("\n\nInterrupted by user")
     except Exception as e:
-        print(f"\nError: {e}")
-        sys.exit(1)
-    finally:
-        controller.cleanup()
+        print(f"Error playing sound: {e}")
+
+def stop_sound():
+    """Stop any currently playing sound"""
+    try:
+        pygame.mixer.music.stop()
+    except Exception as e:
+        print(f"Error stopping sound: {e}")
+
+# === COMMAND EXECUTION ===
+def run_command(command, timeout=30):
+    """Execute a system command with timeout"""
+    try:
+        print(f"Executing: {command}")
+        result = subprocess.run(
+            command,
+            shell=True,
+            capture_output=True,
+            text=True,
+            timeout=timeout
+        )
+        
+        if result.returncode == 0:
+            print(f"Command succeeded: {command}")
+            if result.stdout:
+                print(f"Output: {result.stdout.strip()}")
+        else:
+            print(f"Command failed: {command}")
+            print(f"Error: {result.stderr.strip()}")
+            
+        return result.returncode == 0
+        
+    except subprocess.TimeoutExpired:
+        print(f"Command timed out: {command}")
+        return False
+    except Exception as e:
+        print(f"Error executing command '{command}': {e}")
+        return False
+
+def run_commands(commands, description=""):
+    """Execute a list of commands"""
+    if not commands:
+        print(f"No {description} commands configured")
+        return True
+        
+    print(f"Running {description} commands...")
+    success_count = 0
+    
+    for cmd in commands:
+        if run_command(cmd):
+            success_count += 1
+        else:
+            print(f"Failed to execute {description} command: {cmd}")
+    
+    print(f"Completed {success_count}/{len(commands)} {description} commands")
+    return success_count == len(commands)
+
+# === DEVICE CONTROL FUNCTIONS ===
+def on_device_enable(user_address=None, is_whitelisted=False):
+    """
+    Called when device is enabled/activated
+    
+    Args:
+        user_address (str): Address of the user who activated the device
+        is_whitelisted (bool): Whether the user is whitelisted
+    """
+    print("=" * 50)
+    print("🟢 DEVICE ENABLE EVENT")
+    print(f"User: {user_address}")
+    print(f"Whitelisted: {is_whitelisted}")
+    print(f"Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}")
+    print("=" * 50)
+    
+    # Play sound effect
+    if SOUND_ENABLED:
+        play_sound()
+    
+    # Execute enable commands
+    success = run_commands(ENABLE_COMMANDS, "enable")
+    
+    if success:
+        print("✅ Device successfully enabled")
+    else:
+        print("❌ Some enable commands failed")
+    
+    return success
+
+def on_device_disable(user_address=None, was_whitelisted=False):
+    """
+    Called when device is disabled/deactivated
+    
+    Args:
+        user_address (str): Address of the user whose session ended
+        was_whitelisted (bool): Whether the user was whitelisted
+    """
+    print("=" * 50)
+    print("🔴 DEVICE DISABLE EVENT")
+    print(f"User: {user_address}")
+    print(f"Was Whitelisted: {was_whitelisted}")
+    print(f"Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}")
+    print("=" * 50)
+    
+    # Stop any playing sound
+    stop_sound()
+    
+    # Execute disable commands
+    success = run_commands(DISABLE_COMMANDS, "disable")
+    
+    if success:
+        print("✅ Device successfully disabled")
+    else:
+        print("❌ Some disable commands failed")
+    
+    return success
+
+# === TESTING FUNCTIONS ===
+def test_enable():
+    """Test the enable functionality"""
+    print("Testing device enable...")
+    return on_device_enable("0x1234567890abcdef", True)
+
+def test_disable():
+    """Test the disable functionality"""
+    print("Testing device disable...")
+    return on_device_disable("0x1234567890abcdef", True)
+
+def test_sound():
+    """Test the sound system"""
+    print("Testing sound system...")
+    if initialize_sound():
+        play_sound()
+        time.sleep(2)
+        stop_sound()
+        print("Sound test completed")
+    else:
+        print("Sound test failed - could not initialize sound system")
+
+# === MAIN EXECUTION ===
+def main():
+    """Main function for testing or direct execution"""
+    if len(sys.argv) < 2:
+        print("InfraLink Device Payload Controller")
+        print("Usage: python devicepayload.py <command> [args]")
+        print("Commands:")
+        print("  enable [user_address] [is_whitelisted]")
+        print("  disable [user_address] [was_whitelisted]")
+        print("  test-enable")
+        print("  test-disable")
+        print("  test-sound")
+        return
+    
+    command = sys.argv[1].lower()
+    
+    # Initialize sound system
+    if SOUND_ENABLED:
+        initialize_sound()
+    
+    if command == "enable":
+        user_address = sys.argv[2] if len(sys.argv) > 2 else None
+        is_whitelisted = sys.argv[3].lower() == "true" if len(sys.argv) > 3 else False
+        on_device_enable(user_address, is_whitelisted)
+        
+    elif command == "disable":
+        user_address = sys.argv[2] if len(sys.argv) > 2 else None
+        was_whitelisted = sys.argv[3].lower() == "true" if len(sys.argv) > 3 else False
+        on_device_disable(user_address, was_whitelisted)
+        
+    elif command == "test-enable":
+        test_enable()
+        
+    elif command == "test-disable":
+        test_disable()
+        
+    elif command == "test-sound":
+        test_sound()
+        
+    else:
+        print(f"Unknown command: {command}")
 
 if __name__ == "__main__":
     main()

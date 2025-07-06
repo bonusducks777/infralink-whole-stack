@@ -3,6 +3,8 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from web3 import Web3
 import json
+import subprocess
+import os
 from network_utils import get_network_info, format_native_amount, get_currency_symbol
 
 # === CONFIG ===
@@ -380,6 +382,7 @@ class DeviceMonitor:
         self.update_interval = 10000  # 10 seconds for demo, 60000 for production
         self.device_info = {}
         self.whitelist_info = {}
+        self.last_device_state = None  # Track device state changes
         
     def setup_ui(self):
         self.root.title("InfraLink Device Monitor")
@@ -548,6 +551,39 @@ class DeviceMonitor:
         # Configure grid weights
         conn_frame.columnconfigure(1, weight=1)
         
+    def call_device_payload(self, action, user_address=None, is_whitelisted=False):
+        """Call the devicepayload.py script for device control"""
+        try:
+            script_path = os.path.join(os.path.dirname(__file__), "devicepayload.py")
+            if not os.path.exists(script_path):
+                print(f"Warning: devicepayload.py not found at {script_path}")
+                return False
+                
+            cmd = ["python", script_path, action]
+            if user_address:
+                cmd.append(user_address)
+                cmd.append(str(is_whitelisted).lower())
+            
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+            
+            if result.returncode == 0:
+                print(f"Device payload {action} executed successfully")
+                if result.stdout:
+                    print(f"Output: {result.stdout.strip()}")
+                return True
+            else:
+                print(f"Device payload {action} failed")
+                if result.stderr:
+                    print(f"Error: {result.stderr.strip()}")
+                return False
+                
+        except subprocess.TimeoutExpired:
+            print(f"Device payload {action} timed out")
+            return False
+        except Exception as e:
+            print(f"Error calling device payload {action}: {e}")
+            return False
+        
     def connect_to_contract(self):
         try:
             rpc_url = self.rpc_entry.get().strip()
@@ -600,6 +636,10 @@ class DeviceMonitor:
                 self.status_bar.config(text=f"Connected to device contract (Info contract unavailable). Owner: {owner[:10]}...")
                 
             self.connect_btn.config(state='disabled')
+            
+            # Play connection sound effect
+            self.play_connection_sound()
+            
             self.start_monitoring()
             
         except Exception as e:
@@ -692,9 +732,31 @@ class DeviceMonitor:
             else:
                 self.whitelist_fee_label.config(text=f"Whitelist Fee: {whitelist_fee_formatted} {token_display}/sec")
             
+            # Update UI and detect state changes
+            current_state = {
+                'is_active': is_active and session_ends_at > current_time,
+                'user_address': last_activated_by,
+                'is_whitelisted': last_user_was_whitelisted
+            }
+            
+            # Check for state changes and trigger payload actions
+            if self.last_device_state is not None:
+                # Device enabled (inactive -> active)
+                if not self.last_device_state['is_active'] and current_state['is_active']:
+                    print(f"Device state change: ENABLED by {current_state['user_address']}")
+                    self.call_device_payload('enable', current_state['user_address'], current_state['is_whitelisted'])
+                
+                # Device disabled (active -> inactive)
+                elif self.last_device_state['is_active'] and not current_state['is_active']:
+                    print(f"Device state change: DISABLED (user {self.last_device_state['user_address']})")
+                    self.call_device_payload('disable', self.last_device_state['user_address'], self.last_device_state['is_whitelisted'])
+            
+            # Store current state for next comparison
+            self.last_device_state = current_state
+                
             # Update UI
-            if is_active and session_ends_at > current_time:
-                self.status_label.config(text="� ONLINE", foreground="green")
+            if current_state['is_active']:
+                self.status_label.config(text="🟢 ONLINE", foreground="green")
                 self.user_label.config(text=f"Active user: {last_activated_by[:10]}...")
                 
                 # Show whitelist status of current user

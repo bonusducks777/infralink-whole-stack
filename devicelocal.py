@@ -827,7 +827,13 @@ class DeviceMonitor:
         self.update_status()
         self.refresh_whitelist()  # Also refresh whitelist when starting
         
+    def on_closing(self):
+        """Handle app closing"""
+        self.root.destroy()
+        
     def run(self):
+        # Set up proper window closing
+        self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
         self.root.mainloop()
 
 if __name__ == "__main__":

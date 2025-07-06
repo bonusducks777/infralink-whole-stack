@@ -68,16 +68,6 @@ CONTRACT_ABI = [
         "type": "event"
     },
     {
-        "anonymous": False,
-        "inputs": [
-            {"indexed": True, "internalType": "address", "name": "user", "type": "address"},
-            {"indexed": False, "internalType": "bool", "name": "status", "type": "bool"},
-            {"indexed": False, "internalType": "string", "name": "name", "type": "string"}
-        ],
-        "name": "WhitelistUpdated",
-        "type": "event"
-    },
-    {
         "inputs": [
             {"internalType": "uint256", "name": "secondsToActivate", "type": "uint256"}
         ],
@@ -160,30 +150,8 @@ CONTRACT_ABI = [
         "stateMutability": "view",
         "type": "function"
     },
-    {
-        "inputs": [
-            {"internalType": "address", "name": "user", "type": "address"}
-        ],
-        "name": "getUserWhitelistInfo",
-        "outputs": [
-            {"internalType": "string", "name": "_whitelistName", "type": "string"},
-            {"internalType": "bool", "name": "_isWhitelisted", "type": "bool"},
-            {"internalType": "uint256", "name": "_applicableFee", "type": "uint256"}
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "getWhitelistInfo",
-        "outputs": [
-            {"internalType": "address[]", "name": "addresses", "type": "address[]"},
-            {"internalType": "string[]", "name": "names", "type": "string[]"},
-            {"internalType": "uint256", "name": "count", "type": "uint256"}
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
+
+
     {
         "inputs": [],
         "name": "isActive",
@@ -250,26 +218,8 @@ CONTRACT_ABI = [
         "stateMutability": "nonpayable",
         "type": "function"
     },
-    {
-        "inputs": [
-            {"internalType": "address", "name": "user", "type": "address"},
-            {"internalType": "bool", "name": "status", "type": "bool"},
-            {"internalType": "string", "name": "name", "type": "string"}
-        ],
-        "name": "setWhitelist",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {"internalType": "uint256", "name": "_fee", "type": "uint256"}
-        ],
-        "name": "setWhitelistFee",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
+
+
     {
         "inputs": [],
         "name": "token",
@@ -324,37 +274,9 @@ CONTRACT_ABI = [
         "stateMutability": "view",
         "type": "function"
     },
-    {
-        "inputs": [
-            {"internalType": "address", "name": "", "type": "address"}
-        ],
-        "name": "whitelist",
-        "outputs": [
-            {"internalType": "bool", "name": "", "type": "bool"}
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {"internalType": "uint256", "name": "", "type": "uint256"}
-        ],
-        "name": "whitelistAddresses",
-        "outputs": [
-            {"internalType": "address", "name": "", "type": "address"}
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "whitelistCount",
-        "outputs": [
-            {"internalType": "uint256", "name": "", "type": "uint256"}
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
+
+
+
     {
         "inputs": [],
         "name": "whitelistFeePerSecond",
@@ -364,17 +286,7 @@ CONTRACT_ABI = [
         "stateMutability": "view",
         "type": "function"
     },
-    {
-        "inputs": [
-            {"internalType": "address", "name": "", "type": "address"}
-        ],
-        "name": "whitelistNames",
-        "outputs": [
-            {"internalType": "string", "name": "", "type": "string"}
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
+
     {
         "inputs": [],
         "name": "withdrawFees",
@@ -486,10 +398,10 @@ class DeviceMonitor:
         notebook.add(status_frame, text="Device Status")
         self.setup_status_tab(status_frame)
         
-        # Whitelist tab
-        whitelist_frame = ttk.Frame(notebook, padding="10")
-        notebook.add(whitelist_frame, text="Whitelist Info")
-        self.setup_whitelist_tab(whitelist_frame)
+        # Users tab
+        users_frame = ttk.Frame(notebook, padding="10")
+        notebook.add(users_frame, text="Registered Users")
+        self.setup_whitelist_tab(users_frame)
         
         # Configuration tab remains at bottom
         config_frame = ttk.Frame(notebook, padding="10")
@@ -552,15 +464,15 @@ class DeviceMonitor:
         self.whitelist_fee_label.grid(row=1, column=0, sticky=tk.W, pady=2)
         
     def setup_whitelist_tab(self, parent):
-        # Whitelist summary
-        summary_frame = ttk.LabelFrame(parent, text="Whitelist Summary", padding="10")
+        # Users summary
+        summary_frame = ttk.LabelFrame(parent, text="Registered Users Summary", padding="10")
         summary_frame.grid(row=0, column=0, sticky=(tk.W, tk.E), pady=(0, 10))
         
-        self.whitelist_count_label = ttk.Label(summary_frame, text="Total Whitelisted Users: 0")
+        self.whitelist_count_label = ttk.Label(summary_frame, text="Total Registered Users: 0")
         self.whitelist_count_label.pack(pady=5)
         
-        # Whitelist details
-        details_frame = ttk.LabelFrame(parent, text="Whitelisted Users", padding="10")
+        # Users details
+        details_frame = ttk.LabelFrame(parent, text="Registered Users", padding="10")
         details_frame.grid(row=1, column=0, sticky=(tk.W, tk.E, tk.N, tk.S), pady=(0, 10))
         
         # Create treeview for whitelist
@@ -590,7 +502,7 @@ class DeviceMonitor:
         details_frame.columnconfigure(0, weight=1)
         
         # Refresh button
-        ttk.Button(details_frame, text="Refresh Whitelist", command=self.refresh_whitelist).grid(row=1, column=0, pady=10)
+        ttk.Button(details_frame, text="Refresh Users", command=self.refresh_whitelist).grid(row=1, column=0, pady=10)
         
     def setup_config_tab(self, parent):
         # Connection Frame
@@ -678,7 +590,7 @@ class DeviceMonitor:
                 
             except Exception as info_error:
                 print(f"Info contract connection failed: {info_error}")
-                print("Will use device contract whitelist functionality as fallback")
+                print("Info contract unavailable - whitelist functionality will be disabled")
                 self.info_contract = None
                 
             self.status_bar.config(text=f"Connected to contract. Owner: {owner[:10]}...")
@@ -856,88 +768,44 @@ class DeviceMonitor:
             return f"{decimal_amount:.8f}"
     
     def refresh_whitelist(self):
-        """Refresh the whitelist information using Info contract or fallback to device contract"""
+        """Refresh the whitelist information using Info contract only"""
         try:
-            if not self.contract:
-                messagebox.showerror("Error", "Please connect to contract first")
+            if not self.info_contract:
+                messagebox.showerror("Error", "Info contract not available")
                 return
                 
-            # First try to use Info contract for whitelist info
-            try:
-                if self.info_contract:
-                    print("Attempting to query Info contract...")
-                    # For now, let's just try to get all registered users to see if the contract is working
-                    all_users = self.info_contract.functions.getAllRegisteredUsers().call()
-                    print(f"Info contract returned {len(all_users)} registered users")
-                    
-                    # For simplicity, let's just show this as a basic count for now
-                    # TODO: Implement proper device-specific whitelist logic later
-                    self.whitelist_count_label.config(text=f"Info Contract Working: {len(all_users)} total users")
-                    
-                    # Clear existing items and show placeholder
-                    for item in self.whitelist_tree.get_children():
-                        self.whitelist_tree.delete(item)
-                    
-                    if len(all_users) > 0:
-                        self.whitelist_tree.insert('', tk.END, values=("Info Contract", f"Found {len(all_users)} users"))
-                    
-                    # Store basic info
-                    self.whitelist_info = {
-                        'addresses': [],
-                        'names': [],
-                        'count': len(all_users)
-                    }
-                    print("Info contract query successful")
-                    return
-                    
-            except Exception as info_error:
-                print(f"Info contract whitelist query failed: {info_error}")
-                # Fall back to device contract
-                
-            # Fallback: Use device contract's whitelist functionality
-            try:
-                whitelist_info = self.contract.functions.getWhitelistInfo().call()
-                addresses = whitelist_info[0]
-                names = whitelist_info[1]
-                count = whitelist_info[2]
-                
-                # Update whitelist count
-                self.whitelist_count_label.config(text=f"Total Whitelisted Users: {count} (via Device Contract)")
-                
-                # Clear existing items
-                for item in self.whitelist_tree.get_children():
-                    self.whitelist_tree.delete(item)
-                    
-                # Add whitelist entries (device contract doesn't have individual fees)
-                for i, address in enumerate(addresses):
-                    name = names[i] if i < len(names) else "Unknown"
-                    # For device contract, just show whitelist fee
-                    try:
-                        whitelist_fee = self.contract.functions.whitelistFeePerSecond().call()
-                        fee_info = "FREE" if whitelist_fee == 0 else f"{self.format_token_amount(whitelist_fee, 8)} HBAR/sec"
-                        display_name = f"{name} ({fee_info})"
-                    except:
-                        display_name = name
-                    self.whitelist_tree.insert('', tk.END, values=(address, display_name))
-                    
-                # Store whitelist info
-                self.whitelist_info = {
-                    'addresses': addresses,
-                    'names': names,
-                    'count': count
-                }
-                
-            except Exception as device_error:
-                print(f"Device contract whitelist query failed: {device_error}")
-                # If both fail, show empty whitelist
-                self.whitelist_count_label.config(text="Total Whitelisted Users: 0 (Unable to fetch)")
-                for item in self.whitelist_tree.get_children():
-                    self.whitelist_tree.delete(item)
-                self.whitelist_info = {'addresses': [], 'names': [], 'count': 0}
+            print("Attempting to query Info contract...")
+            # Get all registered users from Info contract
+            all_users = self.info_contract.functions.getAllRegisteredUsers().call()
+            print(f"Info contract returned {len(all_users)} registered users")
+            
+            # Update whitelist count
+            self.whitelist_count_label.config(text=f"Total Registered Users: {len(all_users)}")
+            
+            # Clear existing items
+            for item in self.whitelist_tree.get_children():
+                self.whitelist_tree.delete(item)
+            
+            # Add user entries
+            for address in all_users:
+                self.whitelist_tree.insert('', tk.END, values=(address, "Registered User"))
+            
+            # Store basic info
+            self.whitelist_info = {
+                'addresses': all_users,
+                'names': ["Registered User"] * len(all_users),
+                'count': len(all_users)
+            }
+            print("Info contract query successful")
                 
         except Exception as e:
+            print(f"Info contract whitelist query failed: {e}")
             messagebox.showerror("Error", f"Failed to refresh whitelist: {str(e)}")
-            print(f"Whitelist refresh error: {e}")
+            # Show empty whitelist on failure
+            self.whitelist_count_label.config(text="Total Registered Users: 0 (Unable to fetch)")
+            for item in self.whitelist_tree.get_children():
+                self.whitelist_tree.delete(item)
+            self.whitelist_info = {'addresses': [], 'names': [], 'count': 0}
     
     def stop_monitoring(self):
         """Stop the monitoring updates"""

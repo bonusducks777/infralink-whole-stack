@@ -636,10 +636,6 @@ class DeviceMonitor:
                 self.status_bar.config(text=f"Connected to device contract (Info contract unavailable). Owner: {owner[:10]}...")
                 
             self.connect_btn.config(state='disabled')
-            
-            # Play connection sound effect
-            self.play_connection_sound()
-            
             self.start_monitoring()
             
         except Exception as e:
